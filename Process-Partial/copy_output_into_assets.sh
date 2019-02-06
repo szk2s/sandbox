@@ -1,0 +1,1 @@
+cp -a ./output/json/. ./assets/json/
