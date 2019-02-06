@@ -16,7 +16,7 @@ py.init_notebook_mode(connected=True)
 # In[2]:
 
 
-file = open("./assets/json/bird.json", 'r')
+file = open("./assets/json/church2.json", 'r')
 matlab_obj = json.load(file)
 soundname = matlab_obj.get('soundname')
 print('soundname:', soundname)
@@ -159,4 +159,3 @@ layout = go.Layout(
 fig = go.Figure(data, layout)
 py.plot(fig, filename='./plotly/extracted.html')
 
-# In[ ]:

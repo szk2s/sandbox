@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import plotly.offline as py
 import plotly.graph_objs as go
 from scipy.interpolate import interp1d
+import scipy.io as sio
 
 py.init_notebook_mode(connected=True)
 
@@ -70,14 +71,10 @@ def get_envelope(input_signal, repeat=2):
 bpm = 120
 ppqn = 48
 
-import os
-
-os.path.abspath('.')
-
 # In[4]:
 
 
-audio, sr = sf.read('./assets/wav/bird_2.wav')
+audio, sr = sf.read('./assets/wav/church2.wav')
 
 n_samples = len(audio)
 endtime = len(audio) / sr
@@ -94,18 +91,16 @@ plt.show()
 
 
 # Continuous Wavelet Transform
-wavelet = pywt.ContinuousWavelet('gaus1')
+wavelet = pywt.ContinuousWavelet('cmor200-0.1')
 scale = np.arange(1, 257)
 coefs, freqs = pywt.cwt(audio, scale, wavelet, 1 / sr)
 
 # In[6]:
 
 
-p = coefs[:, ::100]
-# p = coefs
+p = abs(coefs[:, ::100]) ** 2
 t = np.linspace(0, endtime, p.shape[1])
-# p = abs(p)
-p = p / abs(p).max()
+p = p / p.max()
 
 # In[7]:
 
@@ -116,6 +111,48 @@ midi_amplitude = np.empty(shape=[p.shape[0], n_ticks])
 for i, p_row in enumerate(p):
     envelope = get_envelope(p_row, 4)
     midi_amplitude[i] = abs(np.interp(ticks, t, envelope))
+
+# %%
+mat_contents = sio.loadmat('./mat/bird.mat')
+
+# %%
+p = mat_contents['p']
+p = p[:, ::100]
+t = mat_contents['t']
+freqs = mat_contents['f']
+freqs = freqs.flatten()
+t = t.flatten()
+# In[10]:
+
+# Plot
+
+trace = go.Heatmap(
+    x=t,
+    y=np.log10(freqs),
+    z=np.log10(p),
+)
+
+data = [trace]
+
+layout = go.Layout(
+    title='Partial Data',
+    height=800,
+    scene=dict(
+        xaxis=dict(
+            title=dict(
+                text='Time',
+            ),
+        ),
+        yaxis=dict(
+            title=dict(
+                text='Frequency',
+            ),
+            autorange=False
+        ),
+    )
+)
+fig = go.Figure(data, layout)
+py.plot(fig, filename='./plotly/spectrogram_midi.html')
 
 # In[10]:
 
