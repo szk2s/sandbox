@@ -16,13 +16,14 @@ import convert
 from scipy.signal import savgol_filter
 import sounddevice as sd
 import soundfile as sf
+import additive_synth
 
 py.init_notebook_mode(connected=True)
 
 # In[2]:
 
-input_filename = 'church2.json'
-file = open('./assets/json/'+input_filename, 'r')
+input_filename = 'cricket_pulse_2.json'
+file = open('./assets/json/' + input_filename, 'r')
 json_obj = json.load(file)
 
 # %%
@@ -81,6 +82,7 @@ def setup_fig():
 py.plot(setup_fig(), filename='./plotly/partials.html')
 
 # In[13]: Plot Surface
+# # CAUTION: Plotting Surface may take a lot of time
 times, freqs, amps = convert.to_matrix(points)
 
 
@@ -124,8 +126,9 @@ def setup_fig():
 
 py.plot(setup_fig(), filename='./plotly/midi_amplitude_surface.html')
 # In[7]:
+threshold = -50  # in dB
 
-isSignal = points[:, 2] > 0.006
+isSignal = points[:, 2] > 10 ** (threshold / 20)
 isSignal
 points = points[isSignal]
 
@@ -209,8 +212,21 @@ py.plot(setup_fig(), filename='./plotly/extracted.html')
 # %%
 points = points[labels > -1, :]
 
-# %%
-n_clusters = 6
+# %% Crop by frequency range
+freq_range = dict(
+    low=3800,
+    high=4750,
+)
+condition = np.logical_and(points[:, 1] > freq_range['low'], points[:, 1] < freq_range['high'])
+points = points[condition]
+
+# %% Agglomerative Clustering
+n_clusters = 15
+weight = dict(
+    times=0.05,
+    freqs=10,
+    amps=0.1,
+)
 
 x = points[:, 0]
 y = points[:, 1]
@@ -220,7 +236,13 @@ spX = x / x.max()
 spY = np.log2(y) / np.log2(y).max()
 spZ = z / z.max()
 
-specimens = np.column_stack([spX * 5, spY * 100, spZ * 10])
+specimens = np.column_stack(
+    [
+        spX * 5 * weight['times'],
+        spY * 100 * weight['freqs'],
+        spZ * 10 * weight['amps'],
+    ]
+)
 
 clustering = cl.AgglomerativeClustering(n_clusters).fit(specimens)
 labels = clustering.labels_
@@ -234,6 +256,7 @@ print('types:', np.max(labels) + 1)
 # In[9]:
 
 ## Plot
+
 
 def setup_fig():
     trace = go.Scatter3d(
@@ -253,7 +276,7 @@ def setup_fig():
     layout = go.Layout(
         title='Partial Data',
         hovermode='closest',
-        height=800,
+        height=720,
         margin=dict(
             l=0,
             r=0,
@@ -308,7 +331,7 @@ def setup_fig():
     layout = go.Layout(
         title='Partial Data',
         hovermode='closest',
-        height=800,
+        height=720,
         margin=dict(
             l=0,
             r=0,
@@ -405,7 +428,13 @@ def setup_fig():
     )
     return go.Figure(data, layout)
 
+
 py.plot(setup_fig(), filename='./plotly/extracted.html')
+
+# %% Treatment
+
+extracted_points[:, 2] = extracted_points[:, 2] ** 2.5
+extracted_points[:, 2] = extracted_points[:, 2]/extracted_points[:, 2].max()
 
 # %% json write
 json_obj['extracted_partials'] = extracted_points.tolist()
@@ -414,33 +443,7 @@ with open('./output/json/church2.json', 'w') as outfile:
 
 # %% make reconstructed wav file
 sr = 48000
-
-freqs = np.unique(extracted_points[:, 1])
-sines = np.zeros(shape=(np.ceil(extracted_points[:, 0].max() * sr).astype(int), freqs.size))
-for i, freq in enumerate(freqs):
-    partial = extracted_points[extracted_points[:, 1] == freq]
-    partial = partial[partial[:, 0].argsort()]
-    endtime = partial[:, 0].max()
-    times = np.arange(0, endtime, 1 / sr)
-    amps = np.interp(times, partial[:, 0], partial[:, 2])
-    amps = savgol_filter(amps, sr//10+1, 3)
-    x = times
-    y = amps * np.sin(2 * np.pi * freq * x)
-    sines[:, i] = y
-
-reconstructed = np.sum(sines, axis=1)
-reconstructed = reconstructed/abs(reconstructed).max()
-
-# %%
-for column in sines.T:
-    plt.plot(column)
-plt.show()
-
-
-# %%
-
-plt.plot(sines[:, 4])
-plt.show()
+reconstructed = additive_synth.synthesize(extracted_points, sr, smoothing_level=1)
 
 # %% play and export
 sd.play(reconstructed, sr)
