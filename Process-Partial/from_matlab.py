@@ -21,8 +21,8 @@ py.init_notebook_mode(connected=True)
 
 bpm = 120
 ppqn = 48
-smoothing_level = 3  # from 1 to 3 (int)
-input_filename = 'church2.mat'
+smoothing_level = 0  # from 0 to 2 (int)
+input_filename = 'cricket_pulse_2.mat'
 
 
 # In[2]:
@@ -93,6 +93,7 @@ freqs = freqs.flatten()
 
 
 # In[10]: Plot Spectrogram
+# # CAUTION: Plotting spectrogram may take a lot of time
 
 def setup_fig():
     trace = go.Heatmap(
@@ -132,7 +133,7 @@ n_ticks = int(endtime / 60 * bpm * ppqn)
 ticks = np.linspace(0., endtime, num=n_ticks)
 midi_amplitude = np.empty(shape=[p.shape[0], n_ticks])
 for i, p_row in enumerate(p):
-    envelope = get_envelope(p_row, smoothing_level)
+    envelope = get_envelope(p_row, smoothing_level+1)
     midi_amplitude[i] = abs(np.interp(ticks, t, envelope))
 
 
