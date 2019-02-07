@@ -1,5 +1,5 @@
 %% Audio import
-input_filepath = './assets/wav/church2.wav';
+input_filepath = './assets/wav/cricket_pulse_2.wav';
 [audio, Fs] = audioread(input_filepath);
 [audio, Fs] = prepareAnalysis(audio, Fs);  %sum to mono and normalize audio
 
@@ -8,7 +8,7 @@ endtime = length(audio) / Fs;
 sound(audio, Fs);
 %% Wavelet Transform
 
-[cfs,f] = cwt(audio',Fs,'WaveletParameters',[14,200]);
+[cfs,f] = cwt(audio',Fs,'WaveletParameters',[14,200], 'VoicesPerOctave', 48);
 p = abs(cfs).^2;
 p = p / max(p(:));
 p = p.*0.999;%  normalize
