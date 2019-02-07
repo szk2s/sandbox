@@ -21,7 +21,7 @@ py.init_notebook_mode(connected=True)
 
 bpm = 120
 ppqn = 48
-smoothing_level = 1  # from 1 to 3 (int)
+smoothing_level = 3  # from 1 to 3 (int)
 input_filename = 'church2.mat'
 
 
@@ -137,7 +137,7 @@ for i, p_row in enumerate(p):
 
 
 # In[10]: Plot Spectrogram
-def setup_fig:
+def setup_fig():
     trace = go.Heatmap(
         x=ticks,
         y=np.log10(freqs),
@@ -201,7 +201,8 @@ def setup_fig():
         mode='markers',
         marker=dict(
             size=2,
-            opacity=0.8
+            opacity=0.8,
+            color=np.log(points[:, 2] * 255)
         )
     )
 
