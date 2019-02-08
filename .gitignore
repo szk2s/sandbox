@@ -1,12 +1,12 @@
 ### https://raw.github.com/github/gitignore/6531e382923e8e4d89b069a045e1c2a5d4be6321/Global/macOS.gitignore
-*/plotly
-*/archive
-*/assets/json
-*/output
+plotly
+archive
+assets
+output
 *.mat
 *.wav
 *.mid
-*.txt
+!requirements.txt
 
 # General
 .DS_Store
