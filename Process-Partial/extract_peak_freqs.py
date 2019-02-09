@@ -440,8 +440,10 @@ extracted_points[:, 2] = extracted_points[:, 2]/extracted_points[:, 2].max()
 
 # %% json write
 json_obj['extracted_partials'] = extracted_points.tolist()
-with open('./output/json/church2.json', 'w') as outfile:
+output_filename = os.path.splitext(input_filename)[0] + '.json'
+with open('./output/json/' + output_filename, 'w') as outfile:
     json.dump(json_obj, outfile)
+    print('completed')
 
 # %% make reconstructed wav file
 sr = 48000
