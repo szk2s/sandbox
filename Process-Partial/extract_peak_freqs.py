@@ -18,7 +18,6 @@ import sounddevice as sd
 import soundfile as sf
 import additive_synth
 
-py.init_notebook_mode(connected=True)
 np.set_printoptions(threshold=9999)
 
 
@@ -366,6 +365,7 @@ py.plot(setup_fig(), filename='./plotly/extracted.html')
 
 # %% extract loudest partial in the cluster
 extracted_points = np.empty(shape=(0, 3))
+original_points = np.array(json_obj['partials'])
 
 for target_label in range(n_clusters):
     # print('target:', target_label)
@@ -378,10 +378,8 @@ for target_label in range(n_clusters):
         mean_amps[i] = np.mean(target_partial[:, 2])
     loudest_freq = freqs_list[np.where(mean_amps == mean_amps.max())][0]
     # print('loudest:', loudest_freq)
-    original_points = np.array(json_obj['partials'])
-    points_to_add = original_points[original_points[:, 1] == loudest_freq]
-    extracted_points = np.append(extracted_points, points_to_add, axis=0)
-
+    partial = original_points[original_points[:, 1] == loudest_freq]
+    extracted_points = np.append(extracted_points, partial, axis=0)
 
 # %% Plot
 
@@ -435,16 +433,66 @@ py.plot(setup_fig(), filename='./plotly/extracted.html')
 
 # %% Treatment
 
-extracted_points[:, 2] = extracted_points[:, 2] ** 2.5
+extracted_points[:, 2] = extracted_points[:, 2] ** 2
 extracted_points[:, 2] = extracted_points[:, 2]/extracted_points[:, 2].max()
 
 # %% json write
-json_obj['extracted_partials'] = extracted_points.tolist()
-output_filename = os.path.splitext(input_filename)[0] + '.json'
-with open('./output/json/' + output_filename, 'w') as outfile:
-    json.dump(json_obj, outfile)
-    print('completed')
+times, freqs, amps = convert.to_matrix(extracted_points)
 
+# In[13]: Plot Surface
+# # CAUTION: Plotting Surface may take a lot of time
+
+def setup_fig():
+    data = [
+        go.Surface(
+            x=times,
+            y=freqs,
+            z=amps
+        )
+    ]
+    layout = go.Layout(
+        height=900,
+        margin=dict(
+            l=0,
+            r=0,
+            b=0,
+            t=0
+        ),
+        scene=dict(
+            xaxis=dict(
+                title='Time',
+                ticklen=5,
+                gridwidth=2,
+            ),
+            yaxis=dict(
+                title='Frequency',
+                type='log',
+                ticklen=5,
+                gridwidth=2,
+            ),
+            zaxis=dict(
+                title='Amplitude',
+                ticklen=5,
+                gridwidth=2,
+            )
+        )
+    )
+    return go.Figure(data=data, layout=layout)
+
+
+py.plot(setup_fig(), filename='./plotly/midi_amplitude_surface.html')
+# %%
+json_obj['extracted_partials'] = dict(
+    times=times.tolist(),
+    freqs=freqs.tolist(),
+    amps=amps.tolist(),
+    soundname=os.path.splitext(input_filename)[0]
+)
+output_filename = os.path.splitext(input_filename)[0] + '.json'
+with open('./output/json/' + output_filename, 'w+') as jsonFile:
+    json.dump(json_obj, jsonFile)
+    print('Result is at')
+    print('./output/json/' + output_filename)
 # %% make reconstructed wav file
 sr = 48000
 reconstructed = additive_synth.synthesize(extracted_points, sr, smoothing_level=1)
