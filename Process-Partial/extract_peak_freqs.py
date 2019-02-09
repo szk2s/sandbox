@@ -19,6 +19,8 @@ import soundfile as sf
 import additive_synth
 
 py.init_notebook_mode(connected=True)
+np.set_printoptions(threshold=9999)
+
 
 # In[2]:
 

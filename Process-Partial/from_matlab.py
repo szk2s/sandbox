@@ -14,6 +14,7 @@ import json
 import os
 
 py.init_notebook_mode(connected=True)
+np.set_printoptions(threshold=9999)
 
 # In[3]:
 
