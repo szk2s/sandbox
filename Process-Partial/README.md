@@ -1,5 +1,11 @@
 
 ### Hear the demo sounds [here](https://drive.google.com/drive/folders/1xU2hxmzMhu4SbaaS6ggDsQUYxpIQMYT8?usp=sharing)!!  
+
+## Install
+
+```shell
+python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt
+```
   
 ## Analysed Data (Recording of Cello's A note)
 <img width="863" alt="cello" src="https://user-images.githubusercontent.com/31060964/46904761-6c724300-cf24-11e8-8f6c-981b78668004.png">
