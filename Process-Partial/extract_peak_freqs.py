@@ -17,9 +17,9 @@ from scipy.signal import savgol_filter
 import sounddevice as sd
 import soundfile as sf
 import additive_synth
+import scipy.io as sio
 
 np.set_printoptions(threshold=9999)
-
 
 # In[2]:
 
@@ -30,188 +30,12 @@ json_obj = json.load(file)
 # %%
 points = np.array(json_obj['partials'])
 
-
-# In[12]: Plot Scatter
-
-def setup_fig():
-    trace = go.Scatter3d(
-        x=points[:, 0],
-        y=points[:, 1],
-        z=points[:, 2],
-        mode='markers',
-        marker=dict(
-            size=2,
-            opacity=0.8,
-            color=np.log(points[:, 2] * 255)
-        )
-    )
-
-    data = [trace]
-
-    layout = go.Layout(
-        title='Partial Data',
-        hovermode='closest',
-        height=900,
-        margin=dict(
-            l=0,
-            r=0,
-            b=0,
-            t=0
-        ),
-        scene=dict(
-            xaxis=dict(
-                title='Time',
-                ticklen=5,
-                gridwidth=2,
-            ),
-            yaxis=dict(
-                title='Frequency',
-                type='log',
-                ticklen=5,
-                gridwidth=2,
-            ),
-            zaxis=dict(
-                title='Amplitude',
-                ticklen=5,
-                gridwidth=2,
-            )
-        )
-    )
-    return go.Figure(data, layout)
-
-
-py.plot(setup_fig(), filename='./plotly/partials.html')
-
-# In[13]: Plot Surface
-# # CAUTION: Plotting Surface may take a lot of time
-times, freqs, amps = convert.to_matrix(points)
-
-
-def setup_fig():
-    data = [
-        go.Surface(
-            x=times,
-            y=freqs,
-            z=amps
-        )
-    ]
-    layout = go.Layout(
-        height=900,
-        margin=dict(
-            l=0,
-            r=0,
-            b=0,
-            t=0
-        ),
-        scene=dict(
-            xaxis=dict(
-                title='Time',
-                ticklen=5,
-                gridwidth=2,
-            ),
-            yaxis=dict(
-                title='Frequency',
-                type='log',
-                ticklen=5,
-                gridwidth=2,
-            ),
-            zaxis=dict(
-                title='Amplitude',
-                ticklen=5,
-                gridwidth=2,
-            )
-        )
-    )
-    return go.Figure(data=data, layout=layout)
-
-
-py.plot(setup_fig(), filename='./plotly/midi_amplitude_surface.html')
 # In[7]:
 threshold = -50  # in dB
 
 isSignal = points[:, 2] > 10 ** (threshold / 20)
 isSignal
 points = points[isSignal]
-
-# In[8]:
-
-
-# DBSCAN Clustering
-x = points[:, 0]
-y = points[:, 1]
-z = points[:, 2]
-
-spX = x / x.max()
-spY = np.log2(y) / np.log2(y).max()
-spZ = z / z.max()
-
-specimens = np.column_stack([spX * 10, spY * 10])
-
-clustering = cl.DBSCAN(min_samples=50).fit(specimens)
-labels = clustering.labels_
-
-print('<< labels >>')
-print(labels)
-print('length:', len(labels))
-print('types:', np.max(labels) + 1)
-
-
-# In[9]:
-
-
-## Plot
-
-def setup_fig():
-    trace = go.Scatter3d(
-        x=points[:, 0],
-        y=points[:, 1],
-        z=points[:, 2],
-        mode='markers',
-        marker=dict(
-            size=2,
-            opacity=0.8,
-            color=labels
-        )
-    )
-
-    data = [trace]
-
-    layout = go.Layout(
-        title='Partial Data',
-        hovermode='closest',
-        height=800,
-        margin=dict(
-            l=0,
-            r=0,
-            b=0,
-            t=0
-        ),
-        scene=dict(
-            xaxis=dict(
-                title='Time',
-                ticklen=5,
-                gridwidth=2,
-            ),
-            yaxis=dict(
-                title='Frequency',
-                type='log',
-                ticklen=5,
-                gridwidth=2,
-            ),
-            zaxis=dict(
-                title='Amplitude',
-                ticklen=5,
-                gridwidth=2,
-            )
-        )
-    )
-    return go.Figure(data, layout)
-
-
-py.plot(setup_fig(), filename='./plotly/extracted.html')
-
-# %%
-points = points[labels > -1, :]
 
 # %% Crop by frequency range
 freq_range = dict(
@@ -251,7 +75,7 @@ labels = clustering.labels_
 print('<< labels >>')
 print(labels)
 print('length:', len(labels))
-print('types:', np.max(labels) + 1)
+print('label types:', np.max(labels) + 1)
 
 
 # In[9]:
@@ -309,7 +133,7 @@ def setup_fig():
 py.plot(setup_fig(), filename='./plotly/extracted.html')
 
 # %%
-target_label = 2
+target_label = 7
 target_cluster = points[labels == target_label, :]
 
 
@@ -320,7 +144,7 @@ def setup_fig():
         x=target_cluster[:, 0],
         y=target_cluster[:, 1],
         z=target_cluster[:, 2],
-        mode='markers',
+        mode='markers+lines',
         marker=dict(
             size=2,
             opacity=0.8,
@@ -431,16 +255,26 @@ def setup_fig():
 
 py.plot(setup_fig(), filename='./plotly/extracted.html')
 
+# %%
+sio.savemat(
+    './mat/extracted_' + os.path.splitext(input_filename)[0],
+    dict(
+        soundname=os.path.splitext(input_filename)[0],
+        points=extracted_points,
+    )
+)
+
 # %% Treatment
 
 extracted_points[:, 2] = extracted_points[:, 2] ** 2
 extracted_points[:, 2] = extracted_points[:, 2]/extracted_points[:, 2].max()
 
-# %% json write
+
+
+# %%
 times, freqs, amps = convert.to_matrix(extracted_points)
 
 # In[13]: Plot Surface
-# # CAUTION: Plotting Surface may take a lot of time
 
 def setup_fig():
     data = [
@@ -481,6 +315,7 @@ def setup_fig():
 
 
 py.plot(setup_fig(), filename='./plotly/midi_amplitude_surface.html')
+
 # %%
 json_obj['extracted_partials'] = dict(
     times=times.tolist(),
@@ -500,4 +335,4 @@ reconstructed = additive_synth.synthesize(extracted_points, sr, smoothing_level=
 # %% play and export
 sd.play(reconstructed, sr)
 output_filename = os.path.splitext(input_filename)[0] + '.wav'
-sf.write('./output/wav/reconstructed/' + output_filename, reconstructed, sr)
+sf.write('./output/wav/' + output_filename, reconstructed, sr)
