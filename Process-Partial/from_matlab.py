@@ -92,42 +92,7 @@ endtime = mat_contents['endtime'][0][0]
 freqs = freqs.flatten()
 
 
-# In[10]: Plot Spectrogram
-# # CAUTION: Plotting spectrogram may take a lot of time
-
-def setup_fig():
-    trace = go.Heatmap(
-        x=t,
-        y=np.log10(freqs),
-        z=np.log10(p),
-    )
-
-    data = [trace]
-
-    layout = go.Layout(
-        title='Partial Data',
-        height=720,
-        scene=dict(
-            xaxis=dict(
-                title=dict(
-                    text='Time',
-                ),
-            ),
-            yaxis=dict(
-                title=dict(
-                    text='Frequency',
-                ),
-                autorange=False
-            ),
-        )
-    )
-    return go.Figure(data, layout)
-
-
-py.plot(setup_fig(), filename='./plotly/spectrogram_p.html')
-
 # In[7]:
-
 
 n_ticks = int(endtime / 60 * bpm * ppqn)
 ticks = np.linspace(0., endtime, num=n_ticks)
@@ -243,47 +208,6 @@ def setup_fig():
 
 py.plot(setup_fig(), filename='./plotly/partials.html')
 
-
-# In[13]: Plot Surface
-def setup_fig():
-    data = [
-        go.Surface(
-            x=ticks,
-            y=freqs,
-            z=midi_amplitude
-        )
-    ]
-    layout = go.Layout(
-        height=900,
-        margin=dict(
-            l=0,
-            r=0,
-            b=0,
-            t=0
-        ),
-        scene=dict(
-            xaxis=dict(
-                title='Time',
-                ticklen=5,
-                gridwidth=2,
-            ),
-            yaxis=dict(
-                title='Frequency',
-                type='log',
-                ticklen=5,
-                gridwidth=2,
-            ),
-            zaxis=dict(
-                title='Amplitude',
-                ticklen=5,
-                gridwidth=2,
-            )
-        )
-    )
-    return go.Figure(data=data, layout=layout)
-
-
-py.plot(setup_fig(), filename='./plotly/midi_amplitude_surface.html')
 
 # %%
 output_filename = os.path.splitext(input_filename)[0] + '.json'

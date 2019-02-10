@@ -21,9 +21,17 @@ import scipy.io as sio
 
 np.set_printoptions(threshold=9999)
 
+
+# %%
+def rescale(x, range=(-1, 1), axis=None):
+    domain = np.min(x, axis), np.max(x, axis)
+    y = (x - (domain[1] + domain[0]) / 2) / (domain[1] - domain[0])
+    return y * (range[1] - range[0]) + (range[1] + range[0]) / 2
+
+
 # In[2]:
 
-input_filename = 'cricket_pulse_2.json'
+input_filename = 'cricket_drone_1.json'
 file = open('./assets/json/' + input_filename, 'r')
 json_obj = json.load(file)
 
@@ -31,7 +39,7 @@ json_obj = json.load(file)
 points = np.array(json_obj['partials'])
 
 # In[7]:
-threshold = -50  # in dB
+threshold = -36  # in dB
 
 isSignal = points[:, 2] > 10 ** (threshold / 20)
 isSignal
@@ -39,18 +47,54 @@ points = points[isSignal]
 
 # %% Crop by frequency range
 freq_range = dict(
-    low=3800,
-    high=4750,
+    low=0,
+    high=10000,
 )
 condition = np.logical_and(points[:, 1] > freq_range['low'], points[:, 1] < freq_range['high'])
 points = points[condition]
 
+# %% DBSCAN Clustering
+weight = dict(
+    times=0.5,
+    freqs=5,
+    amps=0.2,
+)
+
+min_samples = 50
+
+x = points[:, 0]
+y = points[:, 1]
+z = points[:, 2]
+
+spX = x / x.max()
+spY = np.log2(y) / np.log2(y).max()
+spZ = z / z.max()
+
+specimens = np.column_stack(
+    [
+        spX * 5 * weight['times'],
+        spY * 100 * weight['freqs'],
+        spZ * 10 * weight['amps'],
+    ]
+)
+
+clustering = cl.DBSCAN(min_samples=min_samples).fit(specimens)
+labels = clustering.labels_
+
+print('<< labels >>')
+print(labels)
+print('length:', len(labels))
+print('types:', np.max(labels) + 1)
+
+# %%
+points = points[labels > -1, :]
+
 # %% Agglomerative Clustering
 n_clusters = 15
 weight = dict(
-    times=0.05,
+    times=0.1,
     freqs=10,
-    amps=0.1,
+    amps=0.5,
 )
 
 x = points[:, 0]
@@ -133,7 +177,7 @@ def setup_fig():
 py.plot(setup_fig(), filename='./plotly/extracted.html')
 
 # %%
-target_label = 7
+target_label = 14
 target_cluster = points[labels == target_label, :]
 
 
@@ -205,6 +249,7 @@ for target_label in range(n_clusters):
     partial = original_points[original_points[:, 1] == loudest_freq]
     extracted_points = np.append(extracted_points, partial, axis=0)
 
+
 # %% Plot
 
 def setup_fig():
@@ -216,6 +261,7 @@ def setup_fig():
         marker=dict(
             size=2,
             opacity=0.8,
+            color=labels,
         )
     )
 
@@ -255,24 +301,74 @@ def setup_fig():
 
 py.plot(setup_fig(), filename='./plotly/extracted.html')
 
-# %%
-sio.savemat(
-    './mat/extracted_' + os.path.splitext(input_filename)[0],
-    dict(
-        soundname=os.path.splitext(input_filename)[0],
-        points=extracted_points,
-    )
-)
-
 # %% Treatment
+condition0 = extracted_points[:, 0] > 3
+condition1 = extracted_points[:, 1] > 6000
+condition2 = extracted_points[:, 2] < 0.015
 
-extracted_points[:, 2] = extracted_points[:, 2] ** 2
-extracted_points[:, 2] = extracted_points[:, 2]/extracted_points[:, 2].max()
+zero_padding_condition = np.logical_and(condition0, np.logical_and(condition1, condition2))
 
 
+# %% Plot
+
+def setup_fig():
+    trace = go.Scatter3d(
+        x=extracted_points[:, 0],
+        y=extracted_points[:, 1],
+        z=extracted_points[:, 2],
+        mode='markers',
+        marker=dict(
+            size=2,
+            opacity=0.8,
+            color=zero_padding_condition * 127,
+        )
+    )
+
+    data = [trace]
+
+    layout = go.Layout(
+        title='Partial Data',
+        hovermode='closest',
+        height=800,
+        margin=dict(
+            l=0,
+            r=0,
+            b=0,
+            t=0
+        ),
+        scene=dict(
+            xaxis=dict(
+                title='Time',
+                ticklen=5,
+                gridwidth=2,
+            ),
+            yaxis=dict(
+                title='Frequency',
+                type='log',
+                ticklen=5,
+                gridwidth=2,
+            ),
+            zaxis=dict(
+                title='Amplitude',
+                ticklen=5,
+                gridwidth=2,
+            )
+        )
+    )
+    return go.Figure(data, layout)
+
+
+py.plot(setup_fig(), filename='./plotly/extracted.html')
+
+# %% Zero padding
+
+extracted_points[zero_padding_condition, 2] = 0
+# extracted_points[extracted_points[:, 2] < 0.03, 2] = 0
+extracted_points[:, 2] = rescale(extracted_points[:, 2], range=(0, 1))
 
 # %%
 times, freqs, amps = convert.to_matrix(extracted_points)
+
 
 # In[13]: Plot Surface
 
