@@ -1,5 +1,5 @@
 %% Audio import
-input_filepath = './assets/wav/cricket_pulse_2.wav';
+input_filepath = './assets/wav/fogs_short.wav';
 [audio, Fs] = audioread(input_filepath);
 [audio, Fs] = prepareAnalysis(audio, Fs);  %sum to mono and normalize audio
 

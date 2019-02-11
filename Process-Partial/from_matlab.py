@@ -22,7 +22,7 @@ np.set_printoptions(threshold=9999)
 bpm = 120
 ppqn = 48
 smoothing_level = 0  # from 0 to 2 (int)
-input_filename = 'cricket_pulse_2.mat'
+input_filename = 'fogs_short.mat'
 
 
 # In[2]:
