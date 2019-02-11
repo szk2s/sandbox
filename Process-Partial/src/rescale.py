@@ -1,6 +1,6 @@
 import numpy as np
 
-def rescale(array, range = (0, 1)):
+def rescale(array, range = (0., 1.)):
     _array = np.copy(array)
     if range[1] - range[0] < 0:
         print('Max is smaller than min')
