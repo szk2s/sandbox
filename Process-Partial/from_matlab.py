@@ -12,6 +12,14 @@ import scipy.io as sio
 from random import randint
 import json
 import os
+import sys
+import sounddevice as sd
+import soundfile as sf
+
+sys.path.append('./src')
+
+import additive_synth
+from rescale import rescale
 
 np.set_printoptions(threshold=9999)
 
@@ -22,7 +30,7 @@ np.set_printoptions(threshold=9999)
 bpm = 120
 ppqn = 48
 smoothing_level = 0  # from 0 to 2 (int)
-input_filename = 'cricket_pulse_2.mat'
+input_filename = 'japanese_nightingale_short.mat'
 
 
 # In[2]:
@@ -97,9 +105,9 @@ freqs = freqs.flatten()
 
 def setup_fig():
     trace = go.Heatmap(
-        x=t,
+        x=t[::10],
         y=np.log10(freqs),
-        z=np.log10(p),
+        z=np.log10(p[:, ::10]),
     )
 
     data = [trace]
@@ -133,16 +141,16 @@ n_ticks = int(endtime / 60 * bpm * ppqn)
 ticks = np.linspace(0., endtime, num=n_ticks)
 midi_amplitude = np.empty(shape=[p.shape[0], n_ticks])
 for i, p_row in enumerate(p):
-    envelope = get_envelope(p_row, smoothing_level+1)
+    envelope = get_envelope(p_row, smoothing_level + 1)
     midi_amplitude[i] = abs(np.interp(ticks, t, envelope))
 
 
 # In[10]: Plot Spectrogram
 def setup_fig():
     trace = go.Heatmap(
-        x=ticks,
+        x=ticks[::10],
         y=np.log10(freqs),
-        z=np.log10(midi_amplitude),
+        z=np.log10(midi_amplitude[:, ::10]),
     )
 
     data = [trace]
@@ -196,14 +204,14 @@ points = np.column_stack([x, y, z])
 
 def setup_fig():
     trace = go.Scatter3d(
-        x=points[:, 0],
-        y=points[:, 1],
-        z=points[:, 2],
+        x=points[::10, 0],
+        y=points[::10, 1],
+        z=points[::10, 2],
         mode='markers',
         marker=dict(
             size=2,
             opacity=0.8,
-            color=np.log(points[:, 2] * 255)
+            color=np.log(points[::10, 2] * 255)
         )
     )
 
@@ -243,48 +251,6 @@ def setup_fig():
 
 py.plot(setup_fig(), filename='./plotly/partials.html')
 
-
-# In[13]: Plot Surface
-def setup_fig():
-    data = [
-        go.Surface(
-            x=ticks,
-            y=freqs,
-            z=midi_amplitude
-        )
-    ]
-    layout = go.Layout(
-        height=900,
-        margin=dict(
-            l=0,
-            r=0,
-            b=0,
-            t=0
-        ),
-        scene=dict(
-            xaxis=dict(
-                title='Time',
-                ticklen=5,
-                gridwidth=2,
-            ),
-            yaxis=dict(
-                title='Frequency',
-                type='log',
-                ticklen=5,
-                gridwidth=2,
-            ),
-            zaxis=dict(
-                title='Amplitude',
-                ticklen=5,
-                gridwidth=2,
-            )
-        )
-    )
-    return go.Figure(data=data, layout=layout)
-
-
-py.plot(setup_fig(), filename='./plotly/midi_amplitude_surface.html')
-
 # %%
 output_filename = os.path.splitext(input_filename)[0] + '.json'
 
@@ -295,46 +261,17 @@ with open('./output/json/' + output_filename, 'w') as outfile:
 print('Result file is at')
 print('./output/json/' + output_filename)
 
-# %%
-# # Plot for debugging
-# trace0 = go.Scatter(
-#     name='original',
-#     x=t,
-#     y=p[103],
-#     mode='markers+lines',
-#     marker=dict(
-#         size=4,
-#         opacity=0.8,
-#     ),
-#     line=dict(
-#         width=1
-#     )
-# )
-#
-# data = [trace0]
-#
-# layout = go.Layout(
-#     title='Partial Data',
-#     hovermode='closest',
-#     height=720,
-#     scene=dict(
-#         xaxis=dict(
-#             title='Time',
-#             ticklen=5,
-#             gridwidth=2,
-#         ),
-#         yaxis=dict(
-#             title='Frequency',
-#             type='log',
-#             ticklen=5,
-#             gridwidth=2,
-#         ),
-#         zaxis=dict(
-#             title='Amplitude',
-#             ticklen=5,
-#             gridwidth=2,
-#         )
-#     )
-# )
-# fig = go.Figure(data, layout)
-# py.plot(fig, filename='tmp.html')
+# %% make reconstructed wav file
+sr = 48000
+
+x = points[::10000, 0]
+y = points[::10000, 1]
+z = rescale(points[::10000, 2])
+
+points_for_synthesize = np.column_stack([x, y, z])
+reconstructed = additive_synth.synthesize(points_for_synthesize, sr, smoothing_level=1)
+
+# %% play and export
+sd.play(reconstructed, sr)
+output_filename = os.path.splitext(input_filename)[0] + '.wav'
+sf.write('./output/wav/' + output_filename, reconstructed, sr)

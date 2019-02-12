@@ -1,5 +1,5 @@
 %% Audio import
-input_filepath = './assets/wav/resampled/bird2.wav';
+input_filepath = './assets/wav/resampled/japanese_cicada_short.wav';
 [audio, Fs] = audioread(input_filepath);
 [audio, Fs] = prepareAnalysis(audio, Fs);  %sum to mono and normalize audio
 
@@ -18,6 +18,8 @@ t = sampleIndices / Fs;
 elapsedTime = toc(timerVal);
 
 %% Export Log
+[~,name,~] = fileparts(input_filepath);
+
 log.name = name;
 log.input_filepath = input_filepath;
 log.audio_duration = endtime;
@@ -36,12 +38,15 @@ fclose(fid);
 
 %% Export Workspace 
 
-[~,name,~] = fileparts(input_filepath);
-
 clear cfs
 clear audio
 clear Fs
 clear sampleIndices
+clear jsonStr
+clear timerStartTime
+clear timerVal
+clear fid
+clear elapsedTime
 
 save(strcat('./mat/', name, '.mat'))
 
