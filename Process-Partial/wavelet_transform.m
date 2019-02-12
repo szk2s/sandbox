@@ -1,5 +1,5 @@
 %% Audio import
-input_filepath = './assets/wav/cricket_pulse_2.wav';
+input_filepath = './assets/wav/resampled/bird2.wav';
 [audio, Fs] = audioread(input_filepath);
 [audio, Fs] = prepareAnalysis(audio, Fs);  %sum to mono and normalize audio
 
@@ -7,13 +7,32 @@ input_filepath = './assets/wav/cricket_pulse_2.wav';
 endtime = length(audio) / Fs;
 sound(audio, Fs);
 %% Wavelet Transform
-
+timerVal = tic;
+timerStartTime = now;
 [cfs,f] = cwt(audio',Fs,'WaveletParameters',[14,200], 'VoicesPerOctave', 48);
 p = abs(cfs).^2;
 p = p / max(p(:));
 p = p.*0.999;%  normalize
 sampleIndices = 0:1:size(audio,1)-1;
 t = sampleIndices / Fs;
+elapsedTime = toc(timerVal);
+
+%% Export Log
+log.name = name;
+log.input_filepath = input_filepath;
+log.audio_duration = endtime;
+log.sampling_rate = Fs;
+log.date = datestr(timerStartTime, 'yyyy-mm-dd');
+log.time = datestr(timerStartTime, 'HH:MM:SS');
+log.elapsed_time.wavelet_transform = elapsedTime;
+
+jsonStr = jsonencode(log);
+
+fid = fopen(strcat('./log/', name, '-', ...
+    datestr(timerStartTime, 'yyyy-mm-dd-HH-MM-SS'),'.json'), 'w');
+if fid == -1, error('Cannot create JSON file'); end
+fwrite(fid, jsonStr, 'char');
+fclose(fid);
 
 %% Export Workspace 
 
