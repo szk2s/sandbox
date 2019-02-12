@@ -52,7 +52,7 @@ points = points[condition]
 
 
 # %%  MiniBatchKMeans Clustering (fastest method)
-n_clusters = 2
+n_clusters = 15
 weight = dict(
     times=0.5,
     freqs=5,
@@ -270,7 +270,7 @@ py.plot(setup_fig(), filename='./plotly/extracted.html')
 # %% Treatment
 # condition0 = extracted_points[:, 0] > 3
 # condition1 = extracted_points[:, 1] > 6000
-condition2 = extracted_points[:, 2] < 0.85
+condition2 = extracted_points[:, 2] < 0.83
 
 # zero_padding_condition = np.logical_and(condition0, np.logical_and(condition1, condition2))
 
@@ -328,12 +328,12 @@ py.plot(setup_fig(), filename='./plotly/extracted.html')
 
 # %% Zero padding
 
-extracted_points[condition2, 2] = 0.85
+extracted_points[condition2, 2] = 0.83
 # extracted_points[extracted_points[:, 2] < 0.03, 2] = 0
 extracted_points[:, 2] = rescale(extracted_points[:, 2])
 
 # %%
-if extracted_points[:, 2].min > 0.:
+if extracted_points[:, 2].min() > 0.:
     extracted_points[:, 2] = rescale(extracted_points[:, 2])
 # %%
 times, freqs, amps = convert.to_matrix(extracted_points)
