@@ -20,6 +20,7 @@ sys.path.append('./src')
 
 import additive_synth
 from rescale import rescale
+import h5py
 
 np.set_printoptions(threshold=9999)
 
@@ -30,7 +31,7 @@ np.set_printoptions(threshold=9999)
 bpm = 120
 ppqn = 48
 smoothing_level = 0  # from 0 to 2 (int)
-input_filename = 'japanese_nightingale_short.mat'
+input_filename = 'frogs_1.mat'
 
 
 # In[2]:
@@ -87,17 +88,12 @@ def get_envelope(input_signal, repeat=1):
 
 
 # %%
-mat_contents = sio.loadmat('./mat/' + input_filename)
-
-# %%
-p = mat_contents['p']
-p = p[:, ::10]
-t = mat_contents['t']
-t = t.flatten()
-t = t[::10]
-freqs = mat_contents['f']
-endtime = mat_contents['endtime'][0][0]
-freqs = freqs.flatten()
+with h5py.File('./mat/' + input_filename, 'r') as mat_contents:
+    print(mat_contents.keys())
+    p = np.array(mat_contents['p']).T[:, ::10]
+    t = np.array(mat_contents['t']).flatten()[::10]
+    freqs = np.array(mat_contents['f']).flatten()
+    endtime = np.array(mat_contents['endtime'])[0][0]
 
 
 # In[10]: Plot Spectrogram
@@ -105,9 +101,9 @@ freqs = freqs.flatten()
 
 def setup_fig():
     trace = go.Heatmap(
-        x=t[::10],
+        x=t[::100],
         y=np.log10(freqs),
-        z=np.log10(p[:, ::10]),
+        z=np.log10(p[:, ::100]),
     )
 
     data = [trace]
