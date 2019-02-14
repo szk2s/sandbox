@@ -1,5 +1,5 @@
 %% Audio import
-input_filepath = './assets/wav/resampled/japanese_cicada_short.wav';
+input_filepath = './assets/wav/resampled/higurashi_5sec.wav';
 [audio, Fs] = audioread(input_filepath);
 [audio, Fs] = prepareAnalysis(audio, Fs);  %sum to mono and normalize audio
 
@@ -48,7 +48,7 @@ clear timerVal
 clear fid
 clear elapsedTime
 
-save(strcat('./mat/', name, '.mat'))
+save(strcat('./mat/', name, '.mat'), '-v7.3')
 
 %% define sub function
 

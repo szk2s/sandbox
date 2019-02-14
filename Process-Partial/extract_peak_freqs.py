@@ -24,7 +24,7 @@ np.set_printoptions(threshold=9999)
 
 # In[2]:
 
-input_filename = 'japanese_nightingale_short.json'
+input_filename = 'japanese_cicada_short.json'
 file = open('./assets/json/' + input_filename, 'r')
 json_obj = json.load(file)
 
@@ -84,7 +84,7 @@ py.plot(setup_fig(), filename='./plotly/partials.html')
 
 # %% Crop by frequency range
 freq_range = dict(
-    low=550,
+    low=0,
     high=np.inf,
 )
 condition = np.logical_and(points[:, 1] > freq_range['low'], points[:, 1] < freq_range['high'])
@@ -94,11 +94,11 @@ points = points[condition]
 # In[7]:
 # threshold = -50  # in dB
 
-isSignal = points[:, 2] > 0.68
+isSignal = points[:, 2] > 0.01
+# points = rescale(points[isSignal])
 points = points[isSignal]
-
 # %%  MiniBatchKMeans Clustering (fastest method)
-n_clusters = 15
+n_clusters = 2
 weight = dict(
     times=5,
     freqs=10,
@@ -270,7 +270,7 @@ for target_label in range(n_clusters):
 
 # %%
 
-threshold = 0.72
+threshold = 0.05
 condition2 = extracted_points[:, 2] < threshold
 
 # %% Plot

@@ -30,7 +30,7 @@ np.set_printoptions(threshold=9999)
 bpm = 120
 ppqn = 48
 smoothing_level = 0  # from 0 to 2 (int)
-input_filename = 'japanese_nightingale_short.mat'
+input_filename = 'japanese_cicada_short.mat'
 
 
 # In[2]:
@@ -148,9 +148,9 @@ for i, p_row in enumerate(p):
 # In[10]: Plot Spectrogram
 def setup_fig():
     trace = go.Heatmap(
-        x=ticks[::10],
+        x=ticks[:],
         y=np.log10(freqs),
-        z=np.log10(midi_amplitude[:, ::10]),
+        z=np.log10(midi_amplitude[:, :]),
     )
 
     data = [trace]
@@ -264,9 +264,9 @@ print('./output/json/' + output_filename)
 # %% make reconstructed wav file
 sr = 48000
 
-x = points[::10000, 0]
-y = points[::10000, 1]
-z = rescale(points[::10000, 2])
+x = points[::100, 0]
+y = points[::100, 1]
+z = rescale(points[::100, 2])
 
 points_for_synthesize = np.column_stack([x, y, z])
 reconstructed = additive_synth.synthesize(points_for_synthesize, sr, smoothing_level=1)
