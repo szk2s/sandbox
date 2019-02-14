@@ -85,19 +85,27 @@ def get_envelope(input_signal, repeat=1):
     envelope = signal
     return envelope
 
-
 # %%
-mat_contents = sio.loadmat('./mat/' + input_filename)
+with h5py.File('./mat/' + input_filename, 'r') as mat_contents:
+    print(mat_contents.keys())
+    p = np.array(mat_contents['p']).T[:, ::10]
+    t = np.array(mat_contents['t']).flatten()[::10]
+    freqs = np.array(mat_contents['f']).flatten()
+    endtime = np.array(mat_contents['endtime'])[0][0]
 
-# %%
-p = mat_contents['p']
-p = p[:, ::10]
-t = mat_contents['t']
-t = t.flatten()
-t = t[::10]
-freqs = mat_contents['f']
-endtime = mat_contents['endtime'][0][0]
-freqs = freqs.flatten()
+
+# # %%
+# mat_contents = sio.loadmat('./mat/' + input_filename)
+
+# # %%
+# p = mat_contents['p']
+# p = p[:, ::10]
+# t = mat_contents['t']
+# t = t.flatten()
+# t = t[::10]
+# freqs = mat_contents['f']
+# endtime = mat_contents['endtime'][0][0]
+# freqs = freqs.flatten()
 
 
 # In[10]: Plot Spectrogram
