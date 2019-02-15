@@ -1,10 +1,16 @@
 %% Audio import
-input_filepath = './assets/wav/resampled/japanese_cicada_short.wav';
+input_filepath = './assets/wav/resampled/higara_2.wav';
 [audio, Fs] = audioread(input_filepath);
 [audio, Fs] = prepareAnalysis(audio, Fs);  %sum to mono and normalize audio
 
 % audio = audio(0.5*Fs:1.5*Fs); %if you want to crop input file.
 endtime = length(audio) / Fs;
+
+if endtime > 30
+    audio = audio(1:30*Fs); % crop audio
+    endtime = length(audio) / Fs;
+end
+
 sound(audio, Fs);
 %% Wavelet Transform
 timerVal = tic;
@@ -38,6 +44,7 @@ fclose(fid);
 
 %% Export Workspace 
 
+clear ans
 clear cfs
 clear audio
 clear Fs
@@ -48,7 +55,7 @@ clear timerVal
 clear fid
 clear elapsedTime
 
-save(strcat('./mat/', name, '.mat'))
+save(strcat('./mat/', name, '.mat'), '-v7.3')
 
 %% define sub function
 
