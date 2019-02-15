@@ -123,7 +123,7 @@ specimens = np.column_stack(
     ]
 )
 
-clustering = cl. MiniBatchKMeans(n_clusters).fit(specimens)
+clustering = cl.MiniBatchKMeans(n_clusters).fit(specimens)
 labels = clustering.labels_
 
 print('<< labels >>')
