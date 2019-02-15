@@ -24,25 +24,26 @@ np.set_printoptions(threshold=9999)
 
 # In[2]:
 
-input_filename = 'japanese_nightingale_short.json'
+input_filename = 'japanese_cicada_1.json'
 file = open('./assets/json/' + input_filename, 'r')
 json_obj = json.load(file)
 
 # %%
 points = np.array(json_obj['partials'])
 
+
 # In[12]: Plot Scatter
 
 def setup_fig():
     trace = go.Scatter3d(
-        x=points[::10, 0],
-        y=points[::10, 1],
-        z=points[::10, 2],
+        x=points[::100, 0],
+        y=points[::100, 1],
+        z=points[::100, 2],
         mode='markers',
         marker=dict(
             size=2,
             opacity=0.8,
-            color=rescale(np.log(points[::10, 2]), range=(-255, 255))
+            color=rescale(np.log(points[::100, 2]), range=(-255, 255))
         )
     )
 
@@ -84,7 +85,7 @@ py.plot(setup_fig(), filename='./plotly/partials.html')
 
 # %% Crop by frequency range
 freq_range = dict(
-    low=550,
+    low=1300,
     high=np.inf,
 )
 condition = np.logical_and(points[:, 1] > freq_range['low'], points[:, 1] < freq_range['high'])
@@ -92,17 +93,17 @@ points = points[condition]
 
 
 # In[7]:
-# threshold = -50  # in dB
+threshold = -50  # in dB
 
-isSignal = points[:, 2] > 0.68
-points = points[isSignal]
+isSignal = points[:, 2] > 10 ** (threshold / 20)
+# points = points[isSignal]
 
 # %%  MiniBatchKMeans Clustering (fastest method)
 n_clusters = 15
 weight = dict(
-    times=5,
-    freqs=10,
-    amps=5,
+    times=0.5,
+    freqs=8,
+    amps=0.7,
 )
 
 min_samples = 50
@@ -138,14 +139,14 @@ print('types:', np.max(labels) + 1)
 
 def setup_fig():
     trace = go.Scatter3d(
-        x=points[::10, 0],
-        y=points[::10, 1],
-        z=points[::10, 2],
+        x=points[::100, 0],
+        y=points[::100, 1],
+        z=points[::100, 2],
         mode='markers',
         marker=dict(
             size=2,
             opacity=0.8,
-            color=labels[::10]
+            color=labels[::100]
         )
     )
 
@@ -186,7 +187,10 @@ def setup_fig():
 py.plot(setup_fig(), filename='./plotly/extracted.html')
 
 # %%
-points = points[labels > -1, :]
+points = points[labels < 2, :]
+
+# %%
+points[:, 2] = rescale(np.log(points[:, 2]))
 
 # %% Crop by frequency range
 freq_range = dict(
@@ -204,9 +208,9 @@ target_cluster = points[labels == target_label, :]
 
 def setup_fig():
     trace = go.Scatter3d(
-        x=target_cluster[:, 0],
-        y=target_cluster[:, 1],
-        z=target_cluster[:, 2],
+        x=target_cluster[::10, 0],
+        y=target_cluster[::10, 1],
+        z=target_cluster[::10, 2],
         mode='markers',
         marker=dict(
             size=2,
@@ -270,8 +274,9 @@ for target_label in range(n_clusters):
 
 # %%
 
-threshold = 0.72
+threshold = 0.6
 condition2 = extracted_points[:, 2] < threshold
+# condition2 = np.logical_and(extracted_points[:, 1] > 7000, extracted_points[:, 2] < threshold)
 
 # %% Plot
 
@@ -335,17 +340,23 @@ if extracted_points[:, 2].min() > 0.:
 
 print('min_amp:', extracted_points[:, 2].min())
 
+
+# %%
+extracted_points[extracted_points[:, 2] == extracted_points[:, 2].min(), 2] = 0
+print('min_amp:', extracted_points[:, 2].min())
+
+
+
 # %% json write
 times, freqs, amps = convert.to_matrix(extracted_points)
 
-# %%
 json_obj['extracted_partials'] = dict(
     times=times.tolist(),
     freqs=freqs.tolist(),
     amps=amps.tolist(),
     soundname=os.path.splitext(input_filename)[0]
 )
-output_filename = os.path.splitext(input_filename)[0] + '.json'
+output_filename = os.path.splitext(input_filename)[0] + '_full_voices.json'
 with open('./output/json/' + output_filename, 'w+') as jsonFile:
     json.dump(json_obj, jsonFile)
     print('Result is at')
@@ -356,5 +367,5 @@ reconstructed = additive_synth.synthesize(extracted_points, sr, smoothing_level=
 
 # %% play and export
 sd.play(reconstructed, sr)
-output_filename = os.path.splitext(input_filename)[0] + '.wav'
+output_filename = os.path.splitext(input_filename)[0] + '_full_voices.wav'
 sf.write('./output/wav/' + output_filename, reconstructed, sr)
