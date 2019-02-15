@@ -24,7 +24,7 @@ np.set_printoptions(threshold=9999)
 
 # In[2]:
 
-input_filename = 'japanese_cicada_1.json'
+input_filename = 'higara_2.json'
 file = open('./assets/json/' + input_filename, 'r')
 json_obj = json.load(file)
 
@@ -85,7 +85,7 @@ py.plot(setup_fig(), filename='./plotly/partials.html')
 
 # %% Crop by frequency range
 freq_range = dict(
-    low=1300,
+    low=1000,
     high=np.inf,
 )
 condition = np.logical_and(points[:, 1] > freq_range['low'], points[:, 1] < freq_range['high'])
@@ -93,10 +93,11 @@ points = points[condition]
 
 
 # In[7]:
-threshold = -50  # in dB
+# threshold = -50  # in dB
 
-isSignal = points[:, 2] > 10 ** (threshold / 20)
-# points = points[isSignal]
+# isSignal = points[:, 2] > 10 ** (threshold / 20)
+isSignal = points[:, 2] > 0.42
+points = points[isSignal]
 
 # %%  MiniBatchKMeans Clustering (fastest method)
 n_clusters = 15
@@ -274,22 +275,22 @@ for target_label in range(n_clusters):
 
 # %%
 
-threshold = 0.6
-condition2 = extracted_points[:, 2] < threshold
+threshold = 0.51
+isNoteOn = extracted_points[:, 2] < threshold
 # condition2 = np.logical_and(extracted_points[:, 1] > 7000, extracted_points[:, 2] < threshold)
 
 # %% Plot
 
 def setup_fig():
     trace = go.Scatter3d(
-        x=extracted_points[:, 0],
-        y=extracted_points[:, 1],
-        z=extracted_points[:, 2],
+        x=extracted_points[::10, 0],
+        y=extracted_points[::10, 1],
+        z=extracted_points[::10, 2],
         mode='markers',
         marker=dict(
             size=2,
             opacity=0.8,
-            color=condition2 * 127,
+            color=isNoteOn[::10] * 127,
         )
     )
 
@@ -331,7 +332,7 @@ py.plot(setup_fig(), filename='./plotly/extracted.html')
 
 # %% Zero padding
 
-extracted_points[condition2, 2] = threshold
+extracted_points[isNoteOn, 2] = threshold
 # extracted_points[extracted_points[:, 2] < 0.03, 2] = 0
 extracted_points[:, 2] = rescale(extracted_points[:, 2])
 
