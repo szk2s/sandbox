@@ -15,6 +15,7 @@ import os
 import sys
 import sounddevice as sd
 import soundfile as sf
+import h5py
 
 sys.path.append('./src')
 
@@ -30,7 +31,7 @@ np.set_printoptions(threshold=9999)
 bpm = 120
 ppqn = 48
 smoothing_level = 0  # from 0 to 2 (int)
-input_filename = 'japanese_nightingale_short.mat'
+input_filename = 'higurashi_1.mat'
 
 
 # In[2]:
@@ -88,34 +89,21 @@ def get_envelope(input_signal, repeat=1):
 # %%
 with h5py.File('./mat/' + input_filename, 'r') as mat_contents:
     print(mat_contents.keys())
+    print('Importing...')
     p = np.array(mat_contents['p']).T[:, ::10]
     t = np.array(mat_contents['t']).flatten()[::10]
     freqs = np.array(mat_contents['f']).flatten()
     endtime = np.array(mat_contents['endtime'])[0][0]
-
-
-# # %%
-# mat_contents = sio.loadmat('./mat/' + input_filename)
-
-# # %%
-# p = mat_contents['p']
-# p = p[:, ::10]
-# t = mat_contents['t']
-# t = t.flatten()
-# t = t[::10]
-# freqs = mat_contents['f']
-# endtime = mat_contents['endtime'][0][0]
-# freqs = freqs.flatten()
-
+    print('Successfully imported!')
 
 # In[10]: Plot Spectrogram
 # # CAUTION: Plotting spectrogram may take a lot of time
 
 def setup_fig():
     trace = go.Heatmap(
-        x=t[::10],
+        x=t[::100],
         y=np.log10(freqs),
-        z=np.log10(p[:, ::10]),
+        z=np.log10(p[:, ::100]),
     )
 
     data = [trace]
@@ -269,17 +257,3 @@ with open('./output/json/' + output_filename, 'w') as outfile:
 print('Result file is at')
 print('./output/json/' + output_filename)
 
-# %% make reconstructed wav file
-sr = 48000
-
-x = points[::10000, 0]
-y = points[::10000, 1]
-z = rescale(points[::10000, 2])
-
-points_for_synthesize = np.column_stack([x, y, z])
-reconstructed = additive_synth.synthesize(points_for_synthesize, sr, smoothing_level=1)
-
-# %% play and export
-sd.play(reconstructed, sr)
-output_filename = os.path.splitext(input_filename)[0] + '.wav'
-sf.write('./output/wav/' + output_filename, reconstructed, sr)
