@@ -24,7 +24,7 @@ np.set_printoptions(threshold=9999)
 
 # In[2]:
 
-input_filename = 'higara_2.json'
+input_filename = 'higurashi_1.json'
 file = open('./assets/json/' + input_filename, 'r')
 json_obj = json.load(file)
 
@@ -85,26 +85,29 @@ py.plot(setup_fig(), filename='./plotly/partials.html')
 
 # %% Crop by frequency range
 freq_range = dict(
-    low=1000,
+    low=1200,
     high=np.inf,
 )
 condition = np.logical_and(points[:, 1] > freq_range['low'], points[:, 1] < freq_range['high'])
 points = points[condition]
 
 
+# %%
+points[:, 2] = rescale(np.log(points[:, 2]))
+
 # In[7]:
 # threshold = -50  # in dB
 
 # isSignal = points[:, 2] > 10 ** (threshold / 20)
-isSignal = points[:, 2] > 0.42
+isSignal = points[:, 2] > 0.55
 points = points[isSignal]
 
 # %%  MiniBatchKMeans Clustering (fastest method)
 n_clusters = 15
 weight = dict(
-    times=0.5,
+    times=0,
     freqs=8,
-    amps=0.7,
+    amps=8,
 )
 
 min_samples = 50
@@ -147,7 +150,7 @@ def setup_fig():
         marker=dict(
             size=2,
             opacity=0.8,
-            color=labels[::100]
+            color=labels[::100]*127
         )
     )
 
@@ -188,10 +191,8 @@ def setup_fig():
 py.plot(setup_fig(), filename='./plotly/extracted.html')
 
 # %%
-points = points[labels < 2, :]
+points = points[labels != 3, :]
 
-# %%
-points[:, 2] = rescale(np.log(points[:, 2]))
 
 # %% Crop by frequency range
 freq_range = dict(
@@ -202,7 +203,7 @@ condition = np.logical_and(points[:, 1] > freq_range['low'], points[:, 1] < freq
 points = points[condition]
 
 # %%
-target_label = 2
+target_label = 0
 target_cluster = points[labels == target_label, :]
 
 ## Plot
@@ -275,7 +276,7 @@ for target_label in range(n_clusters):
 
 # %%
 
-threshold = 0.51
+threshold = 0.65
 isNoteOn = extracted_points[:, 2] < threshold
 # condition2 = np.logical_and(extracted_points[:, 1] > 7000, extracted_points[:, 2] < threshold)
 
