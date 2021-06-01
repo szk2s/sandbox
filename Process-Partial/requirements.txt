@@ -26,4 +26,4 @@ sklearn==0.0
 sounddevice==0.3.12
 SoundFile==0.10.2
 traitlets==4.3.2
-urllib3==1.24.1
+urllib3==1.26.5
